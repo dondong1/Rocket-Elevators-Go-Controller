@@ -286,7 +286,7 @@ func requestElevator(requestedFloor int, direction Direction, c *Column) { // Us
 	manageButtonStatusOn(requestedFloor, direction, c)
 	bestElevator := findElevator(requestedFloor, direction, c)
 	if bestElevator.floor != requestedFloor {
-		addFloorToFloorList(requestedFloor, bestElevator)
+		addFloorTofloorRequestList(requestedFloor, bestElevator)
 		bestElevator = moveElevator(requestedFloor, bestElevator)
 	}
 }
@@ -305,8 +305,8 @@ type Elevator struct {
 	elevatorDisplay         Display
 	floorDoorsList          []Door
 	floorDisplaysList       []Display
-	floorButtonsList        []Button
-	floorList               []int
+	floorRequestButtonsList []Button
+	floorRequestList        []int
 }
 
 //----------------- Function to create Elevator -----------------//
@@ -323,8 +323,8 @@ func newElevator(id int, servedFloors int, floor int, elevatorStatus ElevatorSta
 	e.elevatorDisplay = Display{0, displayOn, 0}
 	createFloorDoorsList(e)
 	createDisplaysList(e)
-	createFloorButtonsList(e)
-	e.floorList = []int{}
+	createfloorRequestButtonsList(e)
+	e.floorRequestList = []int{}
 
 	return e
 }
@@ -351,19 +351,19 @@ func createDisplaysList(e *Elevator) {
 }
 
 /* ******* CREATE A LIST WITH A BUTTON OF EACH FLOOR ******* */
-func createFloorButtonsList(e *Elevator) {
+func createfloorRequestButtonsList(e *Elevator) {
 	button := newButton(1, buttonOff, 1)
-	e.floorButtonsList = append(e.floorButtonsList, *button)
+	e.floorRequestButtonsList = append(e.floorRequestButtonsList, *button)
 	for i := e.column.minFloor; i <= e.column.maxFloor; i++ {
 		button = newButton(i, buttonOff, i)
-		e.floorButtonsList = append(e.floorButtonsList, *button)
+		e.floorRequestButtonsList = append(e.floorRequestButtonsList, *button)
 	}
 }
 
 //----------------- Functions for logic -----------------//
 /* ******* LOGIC TO MOVE ELEVATOR ******* */
 func moveElevator(requestedFloor int, e *Elevator) *Elevator {
-	for len(e.floorList) > 0 {
+	for len(e.floorRequestList) > 0 {
 		if e.status == elevatorIdle {
 			if e.floor < requestedFloor {
 				e.status = elevatorUp
@@ -386,7 +386,7 @@ func moveElevator(requestedFloor int, e *Elevator) *Elevator {
 
 /* ******* LOGIC TO MOVE UP ******* */
 func moveUp(e *Elevator) *Elevator {
-	tempArray := e.floorList
+	tempArray := e.floorRequestList
 	for i := e.floor; i < tempArray[len(tempArray)-1]; i++ {
 		currentDoor := findDoorFromDoorsListById(e.floor, &e.floorDoorsList) // finding doors by id
 		if currentDoor != nil && currentDoor.status == doorOpened || e.elevatorDoor.status == doorOpened {
@@ -404,7 +404,7 @@ func moveUp(e *Elevator) *Elevator {
 			manageButtonStatusOff(nextFloor, e)
 		}
 	}
-	if len(e.floorList) == 0 {
+	if len(e.floorRequestList) == 0 {
 		e.status = elevatorIdle
 	} else {
 		e.status = elevatorDown
@@ -425,7 +425,7 @@ func contains(s []int, e int) bool {
 
 /* ******* LOGIC TO MOVE DOWN ******* */
 func moveDown(e *Elevator) *Elevator {
-	tempArray := e.floorList
+	tempArray := e.floorRequestList
 	for i := e.floor; i > tempArray[len(tempArray)-1]; i-- {
 		currentDoor := findDoorFromDoorsListById(e.floor, &e.floorDoorsList) // finding doors by id
 		if currentDoor != nil && currentDoor.status == doorOpened || e.elevatorDoor.status == doorOpened {
@@ -443,7 +443,7 @@ func moveDown(e *Elevator) *Elevator {
 			manageButtonStatusOff(nextFloor, e)
 		}
 	}
-	if len(e.floorList) == 0 {
+	if len(e.floorRequestList) == 0 {
 		e.status = elevatorIdle
 	} else {
 		e.status = elevatorUp
@@ -463,7 +463,7 @@ func manageButtonStatusOff(floor int, e *Elevator) {
 	if currentDownButton != nil {
 		currentDownButton.status = buttonOff
 	}
-	currentFloorButton := findButtonFromButtonsListById(floor, &e.floorButtonsList)
+	currentFloorButton := findButtonFromButtonsListById(floor, &e.floorRequestButtonsList)
 	if currentFloorButton != nil {
 		currentFloorButton.status = buttonOff
 	}
@@ -552,21 +552,21 @@ func checkObstruction(e *Elevator) {
 }
 
 /* ******* LOGIC TO ADD A FLOOR TO THE FLOOR LIST ******* */
-func addFloorToFloorList(floor int, e *Elevator) {
-	if !contains(e.floorList, floor) {
-		e.floorList = append(e.floorList, floor)
-		sort.Slice(e.floorList, func(i, j int) bool { //Order list ascending
-			return e.floorList[i] < e.floorList[j]
+func addFloorTofloorRequestList(floor int, e *Elevator) {
+	if !contains(e.floorRequestList, floor) {
+		e.floorRequestList = append(e.floorRequestList, floor)
+		sort.Slice(e.floorRequestList, func(i, j int) bool { //Order list ascending
+			return e.floorRequestList[i] < e.floorRequestList[j]
 		})
 	}
 }
 
 /* ******* LOGIC TO DELETE ITEM FROM FLOORS LIST ******* */
 func deleteFloorFromList(stopFloor int, e *Elevator) {
-	i := indexOf(len(e.floorList), func(i int) bool { return e.floorList[i] == stopFloor })
+	i := indexOf(len(e.floorRequestList), func(i int) bool { return e.floorRequestList[i] == stopFloor })
 
 	if i > -1 {
-		e.floorList = remove(e.floorList, i)
+		e.floorRequestList = remove(e.floorRequestList, i)
 	}
 }
 
@@ -590,7 +590,7 @@ func indexOf(limit int, predicate func(i int) bool) int {
 /* ******* REQUEST FOR A FLOOR BY PRESSING THE FLOOR BUTTON INSIDE THE ELEVATOR ******* */
 func requestFloor(requestedFloor int, e *Elevator) {
 	if e.floor != requestedFloor {
-		addFloorToFloorList(requestedFloor, e)
+		addFloorTofloorRequestList(requestedFloor, e)
 		moveElevator(requestedFloor, e)
 	}
 }
@@ -728,27 +728,27 @@ func scenario1() {
 	//--------- ElevatorB1 ---------
 	batteryScenario1.columnsList[1].elevatorsList[0].floor = 20
 	batteryScenario1.columnsList[1].elevatorsList[0].status = elevatorDown
-	addFloorToFloorList(5, batteryScenario1.columnsList[1].elevatorsList[0])
+	addFloorTofloorRequestList(5, batteryScenario1.columnsList[1].elevatorsList[0])
 
 	//--------- ElevatorB2 ---------
 	batteryScenario1.columnsList[1].elevatorsList[1].floor = 3
 	batteryScenario1.columnsList[1].elevatorsList[1].status = elevatorUp
-	addFloorToFloorList(15, batteryScenario1.columnsList[1].elevatorsList[1])
+	addFloorTofloorRequestList(15, batteryScenario1.columnsList[1].elevatorsList[1])
 
 	//--------- ElevatorB3 ---------
 	batteryScenario1.columnsList[1].elevatorsList[2].floor = 13
 	batteryScenario1.columnsList[1].elevatorsList[2].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario1.columnsList[1].elevatorsList[2])
+	addFloorTofloorRequestList(1, batteryScenario1.columnsList[1].elevatorsList[2])
 
 	//--------- ElevatorB4 ---------
 	batteryScenario1.columnsList[1].elevatorsList[3].floor = 15
 	batteryScenario1.columnsList[1].elevatorsList[3].status = elevatorDown
-	addFloorToFloorList(2, batteryScenario1.columnsList[1].elevatorsList[3])
+	addFloorTofloorRequestList(2, batteryScenario1.columnsList[1].elevatorsList[3])
 
 	//--------- ElevatorB5 ---------
 	batteryScenario1.columnsList[1].elevatorsList[4].floor = 6
 	batteryScenario1.columnsList[1].elevatorsList[4].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario1.columnsList[1].elevatorsList[4])
+	addFloorTofloorRequestList(1, batteryScenario1.columnsList[1].elevatorsList[4])
 
 	for _, elevator := range batteryScenario1.columnsList[1].elevatorsList {
 		fmt.Printf("elevator%s%d | Floor: %d | Status: %s\n", string(batteryScenario1.columnsList[1].name), elevator.id, elevator.floor, elevator.status)
@@ -775,27 +775,27 @@ func scenario2() {
 	//--------- ElevatorC1 ---------;
 	batteryScenario2.columnsList[2].elevatorsList[0].floor = 1
 	batteryScenario2.columnsList[2].elevatorsList[0].status = elevatorUp
-	addFloorToFloorList(21, batteryScenario2.columnsList[2].elevatorsList[0]) //not departed yet
+	addFloorTofloorRequestList(21, batteryScenario2.columnsList[2].elevatorsList[0]) //not departed yet
 
 	//--------- ElevatorC2 ---------
 	batteryScenario2.columnsList[2].elevatorsList[1].floor = 23
 	batteryScenario2.columnsList[2].elevatorsList[1].status = elevatorUp
-	addFloorToFloorList(28, batteryScenario2.columnsList[2].elevatorsList[1])
+	addFloorTofloorRequestList(28, batteryScenario2.columnsList[2].elevatorsList[1])
 
 	//--------- ElevatorC3 ---------
 	batteryScenario2.columnsList[2].elevatorsList[2].floor = 33
 	batteryScenario2.columnsList[2].elevatorsList[2].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario2.columnsList[2].elevatorsList[2])
+	addFloorTofloorRequestList(1, batteryScenario2.columnsList[2].elevatorsList[2])
 
 	//--------- ElevatorC4 ---------
 	batteryScenario2.columnsList[2].elevatorsList[3].floor = 40
 	batteryScenario2.columnsList[2].elevatorsList[3].status = elevatorDown
-	addFloorToFloorList(24, batteryScenario2.columnsList[2].elevatorsList[3])
+	addFloorTofloorRequestList(24, batteryScenario2.columnsList[2].elevatorsList[3])
 
 	//--------- ElevatorC5 ---------
 	batteryScenario2.columnsList[2].elevatorsList[4].floor = 39
 	batteryScenario2.columnsList[2].elevatorsList[4].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario2.columnsList[2].elevatorsList[4])
+	addFloorTofloorRequestList(1, batteryScenario2.columnsList[2].elevatorsList[4])
 
 	for _, elevator := range batteryScenario2.columnsList[2].elevatorsList {
 		fmt.Printf("elevator%s%d | Floor: %d | Status: %s\n", string(batteryScenario2.columnsList[2].name), elevator.id, elevator.floor, elevator.status)
@@ -823,27 +823,27 @@ func scenario3() {
 	//--------- ElevatorD1 ---------
 	batteryScenario3.columnsList[3].elevatorsList[0].floor = 58
 	batteryScenario3.columnsList[3].elevatorsList[0].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario3.columnsList[3].elevatorsList[0])
+	addFloorTofloorRequestList(1, batteryScenario3.columnsList[3].elevatorsList[0])
 
 	//--------- ElevatorD2 ---------
 	batteryScenario3.columnsList[3].elevatorsList[1].floor = 50
 	batteryScenario3.columnsList[3].elevatorsList[1].status = elevatorUp
-	addFloorToFloorList(60, batteryScenario3.columnsList[3].elevatorsList[1])
+	addFloorTofloorRequestList(60, batteryScenario3.columnsList[3].elevatorsList[1])
 
 	//--------- ElevatorD3 ---------
 	batteryScenario3.columnsList[3].elevatorsList[2].floor = 46
 	batteryScenario3.columnsList[3].elevatorsList[2].status = elevatorUp
-	addFloorToFloorList(58, batteryScenario3.columnsList[3].elevatorsList[2])
+	addFloorTofloorRequestList(58, batteryScenario3.columnsList[3].elevatorsList[2])
 
 	//--------- ElevatorD4 ---------
 	batteryScenario3.columnsList[3].elevatorsList[3].floor = 1
 	batteryScenario3.columnsList[3].elevatorsList[3].status = elevatorUp
-	addFloorToFloorList(54, batteryScenario3.columnsList[3].elevatorsList[3])
+	addFloorTofloorRequestList(54, batteryScenario3.columnsList[3].elevatorsList[3])
 
 	//--------- ElevatorD5 ---------
 	batteryScenario3.columnsList[3].elevatorsList[4].floor = 60
 	batteryScenario3.columnsList[3].elevatorsList[4].status = elevatorDown
-	addFloorToFloorList(1, batteryScenario3.columnsList[3].elevatorsList[4])
+	addFloorTofloorRequestList(1, batteryScenario3.columnsList[3].elevatorsList[4])
 
 	for _, elevator := range batteryScenario3.columnsList[3].elevatorsList {
 		fmt.Printf("elevator%s%d | Floor: %d | Status: %s\n", string(batteryScenario3.columnsList[3].name), elevator.id, elevator.floor, elevator.status)
@@ -879,17 +879,17 @@ func scenario4() {
 	//--------- ElevatorA3 ---------
 	batteryScenario4.columnsList[0].elevatorsList[2].floor = -3 //use of negative numbers to indicate SS / basement
 	batteryScenario4.columnsList[0].elevatorsList[2].status = elevatorDown
-	addFloorToFloorList(-5, batteryScenario4.columnsList[0].elevatorsList[2])
+	addFloorTofloorRequestList(-5, batteryScenario4.columnsList[0].elevatorsList[2])
 
 	//--------- ElevatorA4 ---------
 	batteryScenario4.columnsList[0].elevatorsList[3].floor = -6 //use of negative numbers to indicate SS / basement
 	batteryScenario4.columnsList[0].elevatorsList[3].status = elevatorUp
-	addFloorToFloorList(1, batteryScenario4.columnsList[0].elevatorsList[3])
+	addFloorTofloorRequestList(1, batteryScenario4.columnsList[0].elevatorsList[3])
 
 	//--------- ElevatorA5 ---------
 	batteryScenario4.columnsList[0].elevatorsList[4].floor = -1 //use of negative numbers to indicate SS / basement
 	batteryScenario4.columnsList[0].elevatorsList[4].status = elevatorDown
-	addFloorToFloorList(-6, batteryScenario4.columnsList[0].elevatorsList[4]) //use of negative numbers to indicate SS / basement
+	addFloorTofloorRequestList(-6, batteryScenario4.columnsList[0].elevatorsList[4]) //use of negative numbers to indicate SS / basement
 
 	for _, elevator := range batteryScenario4.columnsList[0].elevatorsList {
 		fmt.Printf("elevator%s%d | Floor: %d | Status: %s\n", string(batteryScenario4.columnsList[0].name), elevator.id, elevator.floor, elevator.status)
